@@ -191,6 +191,109 @@ courses.route('/:term/:section/members')
         res.status(200).send(`Members deleted successfully.`);
     })
 
+courses.route('/:term/:section/signups')
+    .post(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+
+        const courseExists = db.get('courses').find({ term, section }).get('members');
+        if (!courseExists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+        const signups = db.get('courses').find({ term, section }).get('signups');
+
+        // Sanitization:
+        const id = Number(req.body.id);
+        const name = String(req.body.name);
+        const notBefore = Date(req.body.notBefore);
+        const notAfter = Date(req.body.notAfter);
+
+        // Validation:
+        if (!name || name.length === 0 || name.length > 100) {
+            return res.status(400).send('Invalid assignment name, must be 1–100 characters.');
+        }
+
+        // Check for duplicates:
+        const exists = signups.find({ id }).value();
+        if (exists) {
+            return res.status(400).send('Course already exists for this term and section.');
+        }
+
+        // Creates the new course:
+        const slots = [];
+        const newSignup = { id, name, notBefore, notAfter, slots };
+        signups.push(newSignup).write();
+        res.status(201).send('Sign-up sheet created successfully.');
+    })
+    .delete(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+
+        const courseExists = db.get('courses').find({ term, section });
+        if (!courseExists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+        const signups = db.get('courses').find({ term, section }).get('signups');
+
+        const id = Number(req.body.id);
+        const sheetExists = signups.find({ id }).value();
+        if (!sheetExists) {
+            return res.status(400).send('Sheet does not exist.');
+        }
+
+        signups.remove({ id }).write();
+        res.status(200).send(`Sheet deleted successfully.`);
+    })
+    .get(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+
+        const exists = db.get('courses').find({ term, section }).get('members');
+        if (!exists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+        const signups = db.get('courses').find({ term, section }).get('signups');
+
+        res.json(signups.value());
+    })
+
+courses.route('/:term/:section/signups/:id')
+    .post(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+
+        const exists = db.get('courses').find({ term, section }).get('members');
+        if (!exists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+
+    })
+    .get(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+
+        const exists = db.get('courses').find({ term, section }).get('members');
+        if (!exists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+        
+    })
+
 // Installing router objects:
 app.use(`/api/courses`, courses);
 app.use(`/api/signups`, signups);
