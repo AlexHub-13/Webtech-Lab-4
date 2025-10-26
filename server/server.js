@@ -1,6 +1,7 @@
 const express = require('express');
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
+const validator = require('validator');
 const app = express();
 const port = 3000;
 
@@ -116,7 +117,7 @@ courses.route('/:term/:section/members')
             let role = String(member.role);
 
             // Validation:
-            if (!id || id.length < 1 || id.length > 8) {
+            if (!id || !validator.isLength(id, { min: 0, max: 8 })) {
                 return res.status(400).send('Invalid member ID, must be 1–8 characters.');
             }
 
@@ -198,7 +199,7 @@ courses.route('/:term/:section/signups')
         const term = Number(req.params.term);
         const section = Number(req.params.section);
 
-        const courseExists = db.get('courses').find({ term, section }).get('members');
+        const courseExists = db.get('courses').find({ term, section });
         if (!courseExists) {
             return res.status(400).send('Course does not exist.');
         }
@@ -219,7 +220,7 @@ courses.route('/:term/:section/signups')
         // Check for duplicates:
         const exists = signups.find({ id }).value();
         if (exists) {
-            return res.status(400).send('Course already exists for this term and section.');
+            return res.status(400).send('Sign-up sheet already exists for this term, section, and ID.');
         }
 
         // Creates the new course:
@@ -256,7 +257,7 @@ courses.route('/:term/:section/signups')
         const term = Number(req.params.term);
         const section = Number(req.params.section);
 
-        const exists = db.get('courses').find({ term, section }).get('members');
+        const exists = db.get('courses').find({ term, section });
         if (!exists) {
             return res.status(400).send('Course does not exist.');
         }
@@ -266,33 +267,279 @@ courses.route('/:term/:section/signups')
         res.json(signups.value());
     })
 
-courses.route('/:term/:section/signups/:id')
+courses.route('/:term/:section/signups/:id/slots')
     .post(async (req, res) => {
         await db.read();
 
         const term = Number(req.params.term);
         const section = Number(req.params.section);
+        const sheetID = Number(req.params.id);
 
-        const exists = db.get('courses').find({ term, section }).get('members');
-        if (!exists) {
+        const slotID = Number(req.body.id);
+        let start = String(req.body.start);
+        let duration = String(req.body.duration);
+        let numSlots = String(req.body.numSlots);
+        let maxMembers = String(req.body.maxMembers);
+
+        const courseExists = db.get('courses').find({ term, section });
+        if (!courseExists) {
             return res.status(400).send('Course does not exist.');
         }
 
+        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID });
+        if (!sheetExists) {
+            return res.status(400).send('Sheet does not exist.');
+        }
 
+        const slotExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).value();
+        if (slotExists) {
+            return res.status(400).send('Slot already exists');
+        }
+
+        if (!validator.isDate(start) || !validator.isInt(duration, { min: 1, max: 240 }) || !validator.isInt(numSlots, { min: 1, max: 99 }) || !validator.isInt(maxMembers, { min: 1, max: 99 })) {
+            return res.status(400).send('Invalid input.');
+        }
+
+        duration = Number(duration);
+        numSlots = Number(numSlots);
+        maxMembers = Number(maxMembers);
+
+        const members = [];
+        const newSlot = { id: slotID, start, duration, numSlots, maxMembers, members };
+        db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').push(newSlot).write();
+        res.status(201).send('Slot created successfully.');
     })
     .get(async (req, res) => {
         await db.read();
 
         const term = Number(req.params.term);
         const section = Number(req.params.section);
+        const sheetID = Number(req.params.id);
 
-        const exists = db.get('courses').find({ term, section }).get('members');
-        if (!exists) {
+        const courseExists = db.get('courses').find({ term, section }).value();
+        if (!courseExists) {
             return res.status(400).send('Course does not exist.');
         }
 
+        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
+        if (!sheetExists) {
+            return res.status(400).send('Sheet does not exist.');
+        }
+
+        res.status(200).send(db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').value());
+    })
+
+courses.route('/:term/:section/signups/:sheetID/slots/:slotID/')
+    .put(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+        const sheetID = Number(req.params.sheetID);
+        const slotID = Number(req.params.slotID);
+
+        const slot = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID });
+
+        const courseExists = db.get('courses').find({ term, section });
+        if (!courseExists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID });
+        if (!sheetExists) {
+            return res.status(400).send('Sheet does not exist.');
+        }
+
+        const slotExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).value();
+        if (!slotExists) {
+            return res.status(400).send('Slot does not exist.');
+        }
+
+        if (req.body === undefined) {
+            return res.status(400).send('Request body empty; cannot modify.');
+        }
+
+        if ('start' in req.body && req.body.start && validator.isDate(req.body.start)) {
+            const start = req.body.start;
+            slot.set('start', start).write();
+        }
+
+        if ('duration' in req.body && req.body.duration && validator.isInt(req.body.duration, { min: 1, max: 240 })) {
+            const duration = Number(req.body.duration);
+            slot.set('duration', duration).write();
+        }
+
+        if ('numSlots' in req.body && req.body.numSlots && !validator.isInt(req.body.numSlots, { min: 1, max: 99 })) {
+            const numSlots = Number(req.body.numSlots);
+            slot.set('numSlots', numSlots).write();
+        }
+
+        if ('maxMembers' in req.body && req.body.maxMembers && validator.isInt(req.body.maxMembers, { min: 1, max: 99 })) {
+            const maxMembers = Number(req.body.maxMembers);
+            slot.set('maxMembers', maxMembers).write();
+        }
+
+        res.status(200).send(`Slot modified successfully. Members of this slot are: ${slot.get('members').value()}`);
+    })
+
+courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members')
+    .post(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+        const sheetID = Number(req.params.sheetID);
+        const slotID = Number(req.params.slotID);
+
+        const memberID = String(req.body.id);
+
+        const courseExists = db.get('courses').find({ term, section }).value();
+        if (!courseExists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
+        if (!sheetExists) {
+            return res.status(400).send('Sheet does not exist.');
+        }
+
+        const slotExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).value();
+        if (!slotExists) {
+            return res.status(400).send('Slot does not exist.');
+        }
+
+        const slot = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID });
+
+        if (slot.get('members').value().length >= slot.get('maxMembers')) {
+            return res.status(400).send('Slot is full.');
+        }
+
+        if (!validator.isLength(memberID, { min: 0, max: 8 })) {
+            return res.status(400).send('Invalid member ID.');
+        }
+
+        if (slot.get('members').find({ id: memberID }).value()) {
+            return res.status(400).send('Member already in slot.');
+        }
+
+        const member = { id: memberID, grade: "", comment: "" };
+        slot.get('members').push(member).write();
+        res.status(201).send('Member added successfully.');
         
     })
+    .get(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+        const sheetID = Number(req.params.sheetID);
+        const slotID = Number(req.params.slotID);
+
+        const courseExists = db.get('courses').find({ term, section }).value();
+        if (!courseExists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
+        if (!sheetExists) {
+            return res.status(400).send('Sheet does not exist.');
+        }
+
+        const slotExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).value();
+        if (!slotExists) {
+            return res.status(400).send('Slot does not exist.');
+        }
+
+        const members = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).get('members');
+
+        res.json(members.value());
+    })
+
+courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members/:memberID')
+    .delete(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+        const sheetID = Number(req.params.sheetID);
+        const slotID = Number(req.params.slotID);
+        const memberID = String(req.params.memberID);
+
+        const courseExists = db.get('courses').find({ term, section }).value();
+        if (!courseExists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
+        if (!sheetExists) {
+            return res.status(400).send('Sheet does not exist.');
+        }
+
+        const slotExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).value();
+        if (!slotExists) {
+            return res.status(400).send('Slot does not exist.');
+        }
+
+        const memberExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).get('members').find({ id: memberID }).value();
+        if (!memberExists) {
+            return res.status(400).send('Member does not exist.');
+        }
+
+        db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).get('members').remove({ id: memberID }).write();
+        res.status(200).send(`Member deleted successfully.`);
+    })
+    .put(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+        const sheetID = Number(req.params.sheetID);
+        const slotID = Number(req.params.slotID);
+        const memberID = String(req.params.memberID);
+
+        let ogGrade;
+
+        const courseExists = db.get('courses').find({ term, section }).value();
+        if (!courseExists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
+        if (!sheetExists) {
+            return res.status(400).send('Sheet does not exist.');
+        }
+
+        const slotExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).value();
+        if (!slotExists) {
+            return res.status(400).send('Slot does not exist.');
+        }
+
+        const memberExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).get('members').find({ id: memberID }).value();
+        if (!memberExists) {
+            return res.status(400).send('Member does not exist.');
+        }
+
+        const member = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).get('members').find({ id: memberID });
+        ogGrade = member.get('grade').value();
+
+        if (req.body === undefined) {
+            return res.status(400).send('Request body empty; cannot modify.');
+        }
+
+        if ('grade' in req.body && req.body.grade && validator.isInt(req.body.grade, { min: 0, max: 999 })) {
+            const grade = Number(req.body.grade);
+            member.set('grade', grade).write();
+        }
+
+        if ('comment' in req.body && req.body.comment && validator.isLength(req.body.comment, { min: 0, max: 500 })) {
+            const comment = member.get('comment').value() + String(req.body.comment) + " " ;
+            member.set('comment', comment).write();
+        }
+
+        res.status(200).send(`Member modified successfully. The original grade was ${ogGrade}`);
+    })
+
+
 
 // Installing router objects:
 app.use(`/api/courses`, courses);
