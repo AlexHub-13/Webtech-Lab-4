@@ -3,11 +3,116 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script defer src="lab3.js"></script>
     <title>SE 3316 - Lab 3</title>
   </head>
   <body>
+    <h1>Course Manager</h1>
 
-    testimg testing
+    <section id="add-course">
+      <h2>Add New Course</h2>
+      <form id="course-form">
+        <label>Term: <input type="number" id="cTerm" min="1" max="9999" required></label><br>
+        <label>Name: <input type="text" id="cName" maxlength="100" required></label><br>
+        <label>Section: <input type="number" id="cSection" min="1" max="99" value="1"></label><br>
+        <button type="submit">Add Course</button>
+      </form>
+    </section>
+
+    <section id="add-course-member">
+      <h2>Add New Member to Course</h2>
+      <form id="member-course-form">
+        <label>Term: <input type="number" id="mTerm" min="1" max="9999" required></label><br>
+        <label>Section: <input type="number" id="mSection" min="1" max="99" value="1"></label><br><br>
+
+        <label>ID: <input type="text" id="mID" min="1" max="8" required></label><br>
+        <label>First Name: <input type="text" id="mFName" min="1" max="200" required></label><br>
+        <label>Last Name: <input type="text" id="mLName" min="1" max="200" required></label><br>
+        <label>Role: <input type="text" id="mRole" min="1" max="10" required></label><br>
+        <button type="submit">Add Member</button>
+      </form>
+    </section>
+
+    <section id="add-signup">
+      <h2>Add New Signup Sheet</h2>
+      <form id="signup-form">
+        <label>Term: <input type="number" id="sTerm" min="1" max="9999" required></label><br>
+        <label>Section: <input type="number" id="sSection" min="1" max="99" value="1"></label><br><br>
+
+        <label>ID: <input type="number" id="sID" required></label><br>
+        <label>Name: <input type="text" id="sName" min="1" max="100" required></label><br>
+        <label>Start: <input type="date" id="sStart" required></label><br>
+        <label>End: <input type="date" id="sEnd" required></label><br>
+        <button type="submit">Add Signup</button>
+      </form>
+    </section>
+
+    <section id="add-slot">
+      <h2>Add New Slot</h2>
+      <form id="add-slot-form">
+        <label>Term: <input type="number" id="slTerm" min="1" max="9999" required></label><br>
+        <label>Section: <input type="number" id="slSection" min="1" max="99" value="1"></label><br><br>
+        <label>Signup ID: <input type="number" id="slSignupID" required></label><br>
+
+        <label>ID: <input type="number" id="slID" required></label><br>
+        <label>Start: <input type="date" id="slStart" required></label><br>
+        <label>Duration: <input type="number" id="slDuration" min="1" max="240" required></label><br>
+        <label>Number: <input type="number" id="slNum" min="1" max="99" required></label><br>
+        <label>Max. Members: <input type="number" id="slMax" min="1" max="99" required></label><br>
+        <button type="submit">Add Slot</button>
+      </form>
+    </section>
+
+    <section id="modify-slot">
+      <h2>Modify Slot</h2>
+      <form id="modify-slot-form">
+        <label>Term: <input type="number" id="mslTerm" min="1" max="9999" required></label><br>
+        <label>Section: <input type="number" id="slSection" min="1" max="99" value="1"></label><br><br>
+        <label>Signup ID: <input type="number" id="slSignupID" required></label><br>
+
+        <label>ID: <input type="number" id="mslID" required></label><br>
+        <label>Start: <input type="date" id="mslStart" required></label><br>
+        <label>Duration: <input type="number" id="mslDuration" min="1" max="240" required></label><br>
+        <label>Number: <input type="number" id="mslNum" min="1" max="99" required></label><br>
+        <label>Max. Members: <input type="number" id="mslMax" min="1" max="99" required></label><br>
+        <button type="submit">Modify Slot</button>
+      </form>
+    </section>
+
+    <section id="add-slot-member">
+      <h2>Add New Member to Slot</h2>
+      <form id="member-course-form">
+        <label>Term: <input type="number" id="smTerm" min="1" max="9999" required></label><br>
+        <label>Section: <input type="number" id="smSection" min="1" max="99" value="1"></label><br><br>
+        <label>Signup ID: <input type="text" id="smSignupID" min="1" max="8" required></label><br>
+        <label>Slot ID: <input type="text" id="smSlotID" min="1" max="8" required></label><br>
+
+        <label>First Name: <input type="text" id="smFName" min="1" max="200" required></label><br>
+        <label>Last Name: <input type="text" id="smLName" min="1" max="200" required></label><br>
+        <label>Role: <input type="text" id="smRole" min="1" max="10" required></label><br>
+        <button type="submit">Add Member</button>
+      </form>
+    </section>
+
+    <section id="grade">
+      <h2>Add/Modify Grade</h2>
+      <form id="member-course-form">
+        <label>Term: <input type="number" id="smTerm" min="1" max="9999" required></label><br>
+        <label>Section: <input type="number" id="smSection" min="1" max="99" value="1"></label><br><br>
+        <label>Signup ID: <input type="text" id="smSignupID" min="1" max="8" required></label><br>
+        <label>Slot ID: <input type="text" id="smSlotID" min="1" max="8" required></label><br>
+
+        <label>First Name: <input type="text" id="smFName" min="1" max="200" required></label><br>
+        <label>Last Name: <input type="text" id="smLName" min="1" max="200" required></label><br>
+        <label>Role: <input type="text" id="smRole" min="1" max="10" required></label><br>
+        <button type="submit">Add Member</button>
+      </form>
+    </section>
+
+    <section id="courses">
+      <h2>Existing Courses</h2>
+      <ul id="course-list"></ul>
+    </section>
+      
+    <script defer src="lab3.js"></script>
   </body>
 </html>

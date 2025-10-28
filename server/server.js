@@ -209,8 +209,9 @@ courses.route('/:term/:section/signups')
         // Sanitization:
         const id = Number(req.body.id);
         const name = String(req.body.name);
-        const notBefore = Date(req.body.notBefore);
-        const notAfter = Date(req.body.notAfter);
+        const notBefore = Date.parse(req.body.notBefore);
+        const notAfter = Date.parse(req.body.notAfter);
+        console.log(req.body.notBefore)
 
         // Validation:
         if (!name || name.length === 0 || name.length > 100) {
