@@ -87,6 +87,58 @@ async function loadDatabase() {
         delBtn.textContent = 'Delete';
         delBtn.addEventListener('click', () => deleteSignup(course.term, course.section, signup.id));
         sLi.appendChild(delBtn);
+
+        // Load slots:
+        const resSlots = await fetch(`${base}/${course.term}/${course.section}/signups/${signup.id}/slots`);
+        const slots = await resSlots.json();
+
+        sLi.innerHTML += '<br>';
+        const slHeader = document.createTextNode('Slots:');
+        sLi.appendChild(slHeader);
+
+        const slList = document.createElement('ul');
+
+        // Display slots:
+        for (const slot of slots) {
+          const slLi = document.createElement('li');
+          slLi.textContent = `${slot.id} - Starts ${slot.start} for a duration of ${slot.duration}. (Num: ${slot.numSlots}, Max. members: ${slot.maxMembers})`;
+          slList.appendChild(slLi);
+
+          /*
+          let delBtn = document.createElement('button');
+          delBtn.textContent = 'Delete';
+          delBtn.addEventListener('click', () => deleteSlot(course.term, course.section, signup.id));
+          slLi.appendChild(delBtn);
+          */
+
+          // Load slot members:
+          const resSlMembers = await fetch(`${base}/${course.term}/${course.section}/signups/${signup.id}/slots/${slot.id}/members`);
+          const slMembers = await resSlMembers.json();
+
+          slLi.innerHTML += '<br>';
+          const slmHeader = document.createTextNode('Members:');
+          slLi.appendChild(slmHeader);
+
+          const slmList = document.createElement('ul');
+
+          // Display slot members:
+          for (const slm of slMembers) {
+            const slmLi = document.createElement('li');
+            slmLi.textContent = `${slm.id} - Grade: ${slm.grade}, Comment: ${slm.comment}`;
+            slmList.appendChild(slmLi);
+
+            /*
+            let delBtn = document.createElement('button');
+            delBtn.textContent = 'Delete';
+            delBtn.addEventListener('click', () => deleteSignup(course.term, course.section, signup.id));
+            slmLi.appendChild(delBtn);
+            */
+          }
+
+          slLi.appendChild(slmList);
+        }
+
+        sLi.appendChild(slList);
       }
 
       li.appendChild(sList);
