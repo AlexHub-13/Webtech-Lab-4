@@ -46,19 +46,19 @@ courses.route('/')
 
         // Sanitization:
         term = Number(term);
-        name = String(name);
+        name = validator.escape(String(name));
         section = Number(section) || 1; // Default section is 1.
 
         // Validation:
-        if (!term || term < 1 || term > 9999) {
+        if (!validator.isInt(String(term), { min: 1, max: 9999 })) {
             return res.status(400).send('Invalid term code, must be 1–9999.');
         }
 
-        if (!name || name.length === 0 || name.length > 100) {
+        if (!validator.isLength(name, { min: 0, max: 100 })) {
             return res.status(400).send('Invalid course name, must be 1–100 characters.');
         }
 
-        if (section < 1 || section > 99) {
+        if (!validator.isInt(String(section), { min: 1, max: 99 })) {
             return res.status(400).send('Invalid section number, must be 1–99.');
         } 
 
@@ -111,25 +111,25 @@ courses.route('/:term/:section/members')
         for (member of reqMembers) {
 
             // Sanitization: 
-            let id = String(member.id);
-            let fName = String(member.fName);
-            let lName = String(member.lName);
-            let role = String(member.role);
+            let id = validator.escape(String(member.id));
+            let fName = validator.escape(String(member.fName));
+            let lName = validator.escape(String(member.lName));
+            let role = validator.escape(String(member.role));
 
             // Validation:
             if (!id || !validator.isLength(id, { min: 0, max: 8 })) {
                 return res.status(400).send('Invalid member ID, must be 1–8 characters.');
             }
 
-            if (!fName || fName.length < 1 || fName.length > 200) {
+            if (!fName || !validator.isLength(fName, { min: 1, max: 200 })) {
                 return res.status(400).send('Invalid member first name, must be 1–200 characters.');
             }
 
-            if (!lName || lName.length < 1 || lName.length > 200) {
+            if (!lName || !validator.isLength(lName, { min: 1, max: 200 })) {
                 return res.status(400).send('Invalid member last name, must be 1–200 characters.');
             }
 
-            if (!role || role.length < 1 || role.length > 10) {
+            if (!role || !validator.isLength(role, { min: 1, max: 10 })) {
                 return res.status(400).send('Invalid member role, must be 1–10 characters.');
             }
 
@@ -193,7 +193,7 @@ courses.route('/:term/:section/members')
     })
 
 courses.route('/:term/:section/signups')
-    .post(async (req, res) => {
+    .post(async (req, res) => { // Continue sanitizing from here!
         await db.read();
 
         const term = Number(req.params.term);
