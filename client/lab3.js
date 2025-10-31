@@ -18,6 +18,26 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     await createSignup();
   });
+
+  document.getElementById('add-slot-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await createSlot();
+  });
+
+  document.getElementById('modify-slot-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await modifySlot();
+  });
+
+  document.getElementById('member-slot-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await createSlotMember();
+  });
+
+  document.getElementById('grade-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await modifyGrade();
+  });
 });
 
 // Fetch and display all courses
@@ -48,7 +68,7 @@ async function loadDatabase() {
       const resMembers = await fetch(`${base}/${course.term}/${course.section}/members`);
       const members = await resMembers.json();
 
-      li.innerHTML += '<br>';
+      li.appendChild(document.createElement('br'));
       const mHeader = document.createTextNode('Members:');
       li.appendChild(mHeader);
 
@@ -60,10 +80,10 @@ async function loadDatabase() {
         memberLi.textContent = `${member.role} - ${member.fName} ${member.lName} (ID: ${member.id})`;
         mList.appendChild(memberLi);
 
-        let delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete';
-        delBtn.addEventListener('click', () => deleteMember(course.term, course.section, member.id));
-        memberLi.appendChild(delBtn);
+        let delBtn2 = document.createElement('button');
+        delBtn2.textContent = 'Delete';
+        delBtn2.addEventListener('click', () => deleteMember(course.term, course.section, member.id));
+        memberLi.appendChild(delBtn2);
       }
 
       li.appendChild(mList);
@@ -83,16 +103,16 @@ async function loadDatabase() {
         sLi.textContent = `${signup.name} - ${signup.notBefore} to ${signup.notAfter} (ID: ${signup.id})`;
         sList.appendChild(sLi);
 
-        let delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete';
-        delBtn.addEventListener('click', () => deleteSignup(course.term, course.section, signup.id));
-        sLi.appendChild(delBtn);
+        let delBtn3 = document.createElement('button');
+        delBtn3.textContent = 'Delete';
+        delBtn3.addEventListener('click', () => deleteSignup(course.term, course.section, signup.id));
+        sLi.appendChild(delBtn3);
 
         // Load slots:
         const resSlots = await fetch(`${base}/${course.term}/${course.section}/signups/${signup.id}/slots`);
         const slots = await resSlots.json();
 
-        sLi.innerHTML += '<br>';
+        sLi.appendChild(document.createElement('br'));
         const slHeader = document.createTextNode('Slots:');
         sLi.appendChild(slHeader);
 
@@ -104,18 +124,16 @@ async function loadDatabase() {
           slLi.textContent = `${slot.id} - Starts ${slot.start} for a duration of ${slot.duration}. (Num: ${slot.numSlots}, Max. members: ${slot.maxMembers})`;
           slList.appendChild(slLi);
 
-          /*
-          let delBtn = document.createElement('button');
-          delBtn.textContent = 'Delete';
-          delBtn.addEventListener('click', () => deleteSlot(course.term, course.section, signup.id));
-          slLi.appendChild(delBtn);
-          */
+          let delBtn4 = document.createElement('button');
+          delBtn4.textContent = 'Delete';
+          delBtn4.addEventListener('click', () => deleteSlot(course.term, course.section, signup.id, slot.id));
+          slLi.appendChild(delBtn4);
 
           // Load slot members:
           const resSlMembers = await fetch(`${base}/${course.term}/${course.section}/signups/${signup.id}/slots/${slot.id}/members`);
           const slMembers = await resSlMembers.json();
 
-          slLi.innerHTML += '<br>';
+          slLi.appendChild(document.createElement('br'));
           const slmHeader = document.createTextNode('Members:');
           slLi.appendChild(slmHeader);
 
@@ -127,12 +145,10 @@ async function loadDatabase() {
             slmLi.textContent = `${slm.id} - Grade: ${slm.grade}, Comment: ${slm.comment}`;
             slmList.appendChild(slmLi);
 
-            /*
-            let delBtn = document.createElement('button');
-            delBtn.textContent = 'Delete';
-            delBtn.addEventListener('click', () => deleteSignup(course.term, course.section, signup.id));
-            slmLi.appendChild(delBtn);
-            */
+            let delBtn5 = document.createElement('button');
+            delBtn5.textContent = 'Delete';
+            delBtn5.addEventListener('click', () => deleteSlotMember(course.term, course.section, signup.id, slot.id, slm.id));
+            slmLi.appendChild(delBtn5);
           }
 
           slLi.appendChild(slmList);
@@ -144,6 +160,7 @@ async function loadDatabase() {
       li.appendChild(sList);
 
       list.appendChild(li);
+      list.appendChild(document.createElement('br'));
     }
   } catch (err) {
     console.error('Error while loading courses:', err);
@@ -294,5 +311,164 @@ async function deleteSignup(term, section, id) {
     }
   } catch (err) {
     console.error('Error deleting signup:', err);
+  }
+}
+
+// Create, delete, and modify slot:
+async function createSlot() {
+  const term = document.getElementById('slTerm').value;
+  const section = document.getElementById('slSection').value || 1;
+  const sheetID = document.getElementById('slSignupID').value;
+
+  const id = document.getElementById('slID').value;
+  const start = document.getElementById('slStart').value;
+  const duration = document.getElementById('slDuration').value;
+  const num = document.getElementById('slNum').value;
+  const max = document.getElementById('slMax').value;
+
+  const body = { id, start, duration, numSlots: num, maxMembers: max };
+
+  try {
+    const res = await fetch(`${base}/${term}/${section}/signups/${sheetID}/slots`, {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      alert('Slot created.');
+      loadDatabase();
+    } else {
+      alert('Error: ' + (res.status || 'Failed to create slot.'));
+    }
+  } catch (err) {
+    console.error('Error creating slot:', err);
+  }
+}
+
+async function deleteSlot(term, section, sheetID, slotID) {
+  if (!confirm(`Delete slot ID ${slotID} from course ${term} (section ${section}) and signup sheet ID ${sheetID}?`)) return;
+
+  try {
+    const res = await fetch(`${base}/${term}/${section}/signups/${sheetID}/slots/${slotID}`, { 
+      method: 'DELETE'
+    });
+
+    if (res.ok) {
+      alert('Slot deleted.');
+      loadDatabase();
+    } else {
+      alert('Error: ' + (res.status || 'Failed to delete slot.'));
+    }
+  } catch (err) {
+    console.error('Error deleting slot:', err);
+  }
+}
+
+async function modifySlot() {
+  const term = document.getElementById('mslTerm').value;
+  const section = document.getElementById('mslSection').value || 1;
+  const sheetID = document.getElementById('mslSignupID').value;
+  const slotID = document.getElementById('mslID').value;
+
+  const start = document.getElementById('mslStart').value;
+  const duration = document.getElementById('mslDuration').value;
+  const num = document.getElementById('mslNum').value;
+  const max = document.getElementById('mslMax').value;
+
+  const body = { start, duration, numSlots: num, maxMembers: max };
+
+  try {
+    const res = await fetch(`${base}/${term}/${section}/signups/${sheetID}/slots/${slotID}`, {
+      method: 'PUT',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      alert('Slot modified.');
+      loadDatabase();
+    } else {
+      alert('Error: ' + (res.status || 'Failed to modify slot.'));
+    }
+  } catch (err) {
+    console.error('Error modifying slot:', err);
+  }
+}
+
+// Create and delete slot member:
+async function createSlotMember() {
+  const term = document.getElementById('slmTerm').value;
+  const section = document.getElementById('slmSection').value || 1;
+  const sheetID = document.getElementById('slmSignupID').value;
+  const slotID = document.getElementById('slmSlotID').value;
+
+  const memberID = document.getElementById('slmID').value;
+
+  const body = { id: memberID };
+
+  try {
+    const res = await fetch(`${base}/${term}/${section}/signups/${sheetID}/slots/${slotID}/members`, {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      alert('Member created.');
+      loadDatabase();
+    } else {
+      alert('Error: ' + (res.status || 'Failed to create member.'));
+    }
+  } catch (err) {
+    console.error('Error creating member:', err);
+  }
+}
+
+async function deleteSlotMember(term, section, sheetID, slotID, memberID) {
+  if (!confirm(`Delete member ID ${memberID} from course ${term} (section ${section}), signup ID ${sheetID}, and slot ID ${slotID}?`)) return;
+
+  try {
+    const res = await fetch(`${base}/${term}/${section}/signups/${sheetID}/slots/${slotID}/members/${memberID}`, { method: 'DELETE' });
+
+    if (res.ok) {
+      alert('Member deleted.');
+      loadDatabase();
+    } else {
+      alert('Error: ' + (res.status || 'Failed to delete member.'));
+    }
+  } catch (err) {
+    console.error('Error deleting member:', err);
+  }
+}
+
+// Modify grade (PUT slot member)
+async function modifyGrade() {
+  const term = document.getElementById('gTerm').value;
+  const section = document.getElementById('gSection').value || 1;
+  const sheetID = document.getElementById('gSignupID').value;
+  const slotID = document.getElementById('gSlotID').value;
+  const memberID = document.getElementById('gID').value;
+
+  const grade = document.getElementById('gGrade').value;
+  const comment = document.getElementById('gComment').value;
+
+  const body = { grade, comment };
+
+  try {
+    const res = await fetch(`${base}/${term}/${section}/signups/${sheetID}/slots/${slotID}/members/${memberID}`, {
+      method: 'PUT',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      alert('Grade modified.');
+      loadDatabase();
+    } else {
+      alert('Error: ' + (res.status || 'Failed to modify grade.'));
+    }
+  } catch (err) {
+    console.error('Error modifying grade:', err);
   }
 }

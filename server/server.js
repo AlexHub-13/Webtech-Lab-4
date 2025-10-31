@@ -382,6 +382,32 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/')
 
         res.status(200).send(`Slot modified successfully. Members of this slot are: ${slot.get('members').value()}`);
     })
+    .delete(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+        const sheetID = Number(req.params.sheetID);
+        const slotID = Number(req.params.slotID);
+
+        const courseExists = db.get('courses').find({ term, section }).value();
+        if (!courseExists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
+        if (!sheetExists) {
+            return res.status(400).send('Sheet does not exist.');
+        }
+
+        const slotExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).value();
+        if (!slotExists) {
+            return res.status(400).send('Slot does not exist.');
+        }
+
+        db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').remove({ id: slotID }).write();
+        res.status(200).send(`Slot deleted successfully.`);
+    })
 
 courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members')
     .post(async (req, res) => {
