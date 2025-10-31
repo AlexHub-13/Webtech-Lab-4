@@ -152,14 +152,14 @@ courses.route('/:term/:section/members')
         const term = Number(req.params.term);
         const section = Number(req.params.section);
 
-        const exists = db.get('courses').find({ term, section }).get('members');
+        const exists = db.get('courses').find({ term, section }).value();
         if (!exists) {
             return res.status(400).send('Course does not exist.');
         }
 
         let role;
         if (req.body !== undefined && 'role' in req.body && req.body.role) {
-            role = String(req.body.role);
+            role = validator.escape(String(req.body.role));
             res.json(db.get('courses').find({ term, section }).get('members').filter(member => member.role === role).value());
         } else {
             res.json(db.get('courses').find({ term, section }).get('members').value());
@@ -193,13 +193,13 @@ courses.route('/:term/:section/members')
     })
 
 courses.route('/:term/:section/signups')
-    .post(async (req, res) => { // Continue sanitizing from here!
+    .post(async (req, res) => {
         await db.read();
 
         const term = Number(req.params.term);
         const section = Number(req.params.section);
 
-        const courseExists = db.get('courses').find({ term, section });
+        const courseExists = db.get('courses').find({ term, section }).value();
         if (!courseExists) {
             return res.status(400).send('Course does not exist.');
         }
@@ -208,13 +208,12 @@ courses.route('/:term/:section/signups')
 
         // Sanitization:
         const id = Number(req.body.id);
-        const name = String(req.body.name);
-        const notBefore = Date.parse(req.body.notBefore);
-        const notAfter = Date.parse(req.body.notAfter);
-        console.log(req.body.notBefore)
+        const name = validator.escape(String(req.body.name));
+        let notBefore = Date.parse(req.body.notBefore);
+        let notAfter = Date.parse(req.body.notAfter);
 
         // Validation:
-        if (!name || name.length === 0 || name.length > 100) {
+        if (!name || !validator.isLength(name, { min: 1, max: 100 })) {
             return res.status(400).send('Invalid assignment name, must be 1–100 characters.');
         }
 
@@ -236,7 +235,7 @@ courses.route('/:term/:section/signups')
         const term = Number(req.params.term);
         const section = Number(req.params.section);
 
-        const courseExists = db.get('courses').find({ term, section });
+        const courseExists = db.get('courses').find({ term, section }).value();
         if (!courseExists) {
             return res.status(400).send('Course does not exist.');
         }
@@ -258,7 +257,7 @@ courses.route('/:term/:section/signups')
         const term = Number(req.params.term);
         const section = Number(req.params.section);
 
-        const exists = db.get('courses').find({ term, section });
+        const exists = db.get('courses').find({ term, section }).value();
         if (!exists) {
             return res.status(400).send('Course does not exist.');
         }
@@ -277,17 +276,17 @@ courses.route('/:term/:section/signups/:id/slots')
         const sheetID = Number(req.params.id);
 
         const slotID = Number(req.body.id);
-        let start = String(req.body.start);
-        let duration = String(req.body.duration);
-        let numSlots = String(req.body.numSlots);
-        let maxMembers = String(req.body.maxMembers);
+        let start = Date.parse(req.body.start);
+        let duration = validator.escape(String(req.body.duration));
+        let numSlots = validator.escape(String(req.body.numSlots));
+        let maxMembers = validator.escape(String(req.body.maxMembers));
 
-        const courseExists = db.get('courses').find({ term, section });
+        const courseExists = db.get('courses').find({ term, section }).value();
         if (!courseExists) {
             return res.status(400).send('Course does not exist.');
         }
 
-        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID });
+        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
         if (!sheetExists) {
             return res.status(400).send('Sheet does not exist.');
         }
@@ -297,7 +296,7 @@ courses.route('/:term/:section/signups/:id/slots')
             return res.status(400).send('Slot already exists');
         }
 
-        if (!validator.isDate(start) || !validator.isInt(duration, { min: 1, max: 240 }) || !validator.isInt(numSlots, { min: 1, max: 99 }) || !validator.isInt(maxMembers, { min: 1, max: 99 })) {
+        if (!validator.isInt(duration, { min: 1, max: 240 }) || !validator.isInt(numSlots, { min: 1, max: 99 }) || !validator.isInt(maxMembers, { min: 1, max: 99 })) {
             return res.status(400).send('Invalid input.');
         }
 
@@ -341,12 +340,12 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/')
 
         const slot = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID });
 
-        const courseExists = db.get('courses').find({ term, section });
+        const courseExists = db.get('courses').find({ term, section }).value();
         if (!courseExists) {
             return res.status(400).send('Course does not exist.');
         }
 
-        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID });
+        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
         if (!sheetExists) {
             return res.status(400).send('Sheet does not exist.');
         }
@@ -380,7 +379,7 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/')
             slot.set('maxMembers', maxMembers).write();
         }
 
-        res.status(200).send(`Slot modified successfully. Members of this slot are: ${slot.get('members').value()}`);
+        res.status(200).send(`Slot modified successfully. Members of this slot are the following: ${slot.get('members').value()}`);
     })
     .delete(async (req, res) => {
         await db.read();
@@ -418,7 +417,7 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members')
         const sheetID = Number(req.params.sheetID);
         const slotID = Number(req.params.slotID);
 
-        const memberID = String(req.body.id);
+        const memberID = validator.escape(String(req.body.id));
 
         const courseExists = db.get('courses').find({ term, section }).value();
         if (!courseExists) {
@@ -522,7 +521,7 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members/:memberID'
         const section = Number(req.params.section);
         const sheetID = Number(req.params.sheetID);
         const slotID = Number(req.params.slotID);
-        const memberID = String(req.params.memberID);
+        const memberID = validator.escape(String(req.params.memberID));
 
         let ogGrade;
 
