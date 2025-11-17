@@ -1,4 +1,4 @@
-const base = 'http://localhost:3000/api/courses';
+const base = '/api/courses';
 
 // Run once page loads
 document.addEventListener('DOMContentLoaded', () => {

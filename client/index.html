@@ -24,10 +24,10 @@
         <label>Term: <input type="number" id="mTerm" min="1" max="9999" required></label><br>
         <label>Section: <input type="number" id="mSection" min="1" max="99" value="1"></label><br><br>
 
-        <label>ID: <input type="text" id="mID" min="1" max="8" required></label><br>
-        <label>First Name: <input type="text" id="mFName" min="1" max="200" required></label><br>
-        <label>Last Name: <input type="text" id="mLName" min="1" max="200" required></label><br>
-        <label>Role: <input type="text" id="mRole" min="1" max="10" required></label><br>
+        <label>ID: <input type="text" id="mID" maxlength="8" required></label><br>
+        <label>First Name: <input type="text" id="mFName" maxlength="200" required></label><br>
+        <label>Last Name: <input type="text" id="mLName" maxlength="200" required></label><br>
+        <label>Role: <input type="text" id="mRole" maxlength="10" required></label><br>
         <button type="submit">Add Member</button>
       </form>
     </section>
@@ -39,7 +39,7 @@
         <label>Section: <input type="number" id="sSection" min="1" max="99" value="1"></label><br><br>
 
         <label>ID: <input type="number" id="sID" required></label><br>
-        <label>Name: <input type="text" id="sName" min="1" max="100" required></label><br>
+        <label>Name: <input type="text" id="sName" maxlength="100" required></label><br>
         <label>Start: <input type="date" id="sStart" required></label><br>
         <label>End: <input type="date" id="sEnd" required></label><br>
         <button type="submit">Add Signup</button>
@@ -86,7 +86,7 @@
         <label>Signup ID: <input type="number" id="slmSignupID" required></label><br>
         <label>Slot ID: <input type="number" id="slmSlotID" required></label><br><br>
 
-        <label>Member ID: <input type="text" id="slmID" min="1" max="8" required></label><br>
+        <label>Member ID: <input type="text" id="slmID" maxlength="8" required></label><br>
         <button type="submit">Add Member</button>
       </form>
     </section>
@@ -98,10 +98,10 @@
         <label>Section: <input type="number" id="gSection" min="1" max="99" value="1"></label><br>
         <label>Signup ID: <input type="number" id="gSignupID" required></label><br>
         <label>Slot ID: <input type="number" id="gSlotID" required></label><br>
-        <label>Member ID: <input type="text" id="gID" min="1" max="8" required></label><br><br>
+        <label>Member ID: <input type="text" id="gID" maxlength="8" required></label><br><br>
 
         <label>Grade: <input type="number" id="gGrade" min="0" max="999" required></label><br>
-        <label>Comment: <input type="text" id="gComment" min="1" max="500" required></label><br>
+        <label>Comment: <input type="text" id="gComment" maxlength="500" required></label><br>
         <button type="submit">Modify Grade</button>
       </form>
     </section>
