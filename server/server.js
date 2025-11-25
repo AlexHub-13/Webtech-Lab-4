@@ -1,24 +1,33 @@
+require('dotenv').config();
 const express = require('express');
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
 const validator = require('validator');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const auth = require('./middleware/auth.js');
+
 const app = express();
-const port = 3000;
+const port = 3001;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Setup JSON mini database
-const adapter = new FileSync('server/data/db.json');
+const adapter = new FileSync('data/db.json');
 const db = low(adapter);
  
 // Sets the default values for the JSON
-db.defaults({ courses: [] }).write();
+db.defaults({ courses: [], users: [] }).write();
 
 // Router objects:
 const courses = express.Router();
-const signups = express.Router();
-const grades = express.Router();
+const open = express.Router();
+const secure = express.Router();
+const admin = express.Router();
+
+app.use("/api/open", open); // Open req. no auth
+app.use("/api/secure", auth, secure); // Secure req. auth
 
 app.use('/', express.static('client')); // Serves front-end code on homepage.
 
@@ -32,6 +41,82 @@ app.use((req, res, next) => {
     req.db = db;
     next();
 });
+
+// Open routes (no authentication):
+open.route('/auth/login')
+    .post(async (req, res) => {
+        console.log("JWT_SECRET:", process.env.JWT_SECRET);
+        await db.read();
+
+        const { id, plainPass } = req.body;
+
+        const user = db.get('users').find({ id }).value();
+        if (!user) {
+            return res.status(401).json({ message: "Invalid username." });
+        }
+
+        const ok = await bcrypt.compare(plainPass, user.hashedPass);
+        if (!ok) {
+            return res.status(401).json({ message: "Incorrect password." });
+        }
+
+        const token = jwt.sign({
+            userId: user.id,
+            role: user.role
+        },
+        process.env.JWT_SECRET,
+            { expiresIn: "3h" }
+        );
+
+        res.json({ token });
+    });
+
+open.route('/auth/register')
+    .post(async (req, res) => {
+        await db.read();
+    });
+
+// Secure account management routes (authentication required):
+secure.route('/auth/changePassword')
+    .post(async (req, res) => {
+        await db.read();
+    });
+
+secure.route('/auth/logout')
+    .post(async (req, res) => {
+        await db.read();
+    });
+
+// Admin-specific routes:
+admin.route('/users')
+    .get(async (req, res) => {
+        await db.read();
+        res.json(db.get('users').value());
+    })
+    .post(async (req, res) => {
+        await db.read();
+        let { id, plainPass, role } = req.body;
+
+        // Sanitization:
+        id = validator.escape(String(id));
+        let hashedPass = await bcrypt.hash(plainPass, 10);
+        role = validator.escape(String(role));
+        mustChangePass = true;
+
+        // Check for duplicates:
+        const exists = db.get('users').find({ id }).value();
+        if (exists) {
+            return res.status(400).send('User with this ID already exists.');
+        }
+
+        // Check for valid role:
+        if (role !== 'admin' && role !== 'ta' && role !== 'student') {
+            return res.status(400).send('Invalid role; must be admin, ta, or student.');
+        }
+
+        db.get('users').push({ id, hashedPass, role, mustChangePass }).write();
+        res.status(201).send('User created successfully.');
+    });
 
 // Courses:
 courses.route('/')
@@ -569,8 +654,9 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members/:memberID'
 
 // Installing router objects:
 app.use(`/api/courses`, courses);
-app.use(`/api/signups`, signups);
-app.use(`/api/grades`, grades);
+app.use(`/api/open`, open);
+app.use(`/api/secure`, secure);
+app.use(`/api/admin`, admin);
 
 app.listen(port, () => {
     console.log(`Listening on port ${port}`);
