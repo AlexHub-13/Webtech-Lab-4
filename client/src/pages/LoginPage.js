@@ -1,5 +1,13 @@
 import React, { useState } from "react";
 
+import AddNewCourse from "../components/AddCourse.js";
+import AddCourseMember from "../components/AddCourseMember.js";
+import AddSignup from "../components/AddSignup.js";
+import AddSlot from "../components/AddSlot.js";
+import AddSlotMember from "../components/AddSlotMember.js";
+import ModifyGrade from "../components/ModifyGrade.js";
+import ModifySlot from "../components/ModifySlot.js";
+
 export default function LoginPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
@@ -67,6 +75,18 @@ export default function LoginPage() {
                     <p className="text-center text-red-600 text-sm">{message}</p>
                 )}
             </form>
+
+            <AddNewCourse />
+            <AddCourseMember />
+
         </div>
     );
 }
+
+/*
+<AddSignup />
+            <AddSlot />
+            <AddSlotMember />
+            <ModifyGrade />
+            <ModifySlot />
+            */
