@@ -78,15 +78,11 @@ export default function LoginPage() {
 
             <AddNewCourse />
             <AddCourseMember />
-
-        </div>
-    );
-}
-
-/*
-<AddSignup />
+            <AddSignup />
             <AddSlot />
             <AddSlotMember />
             <ModifyGrade />
             <ModifySlot />
-            */
+        </div>
+    );
+}
