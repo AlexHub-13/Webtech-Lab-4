@@ -55,11 +55,6 @@ export default function LoginPage({ onLogin, onForcePassChange }) {
                     Login
                 </button>
             </form>
-
-            <AddUser />
-            <AddCourseMember />
-            <AddNewCourse />
-            <AddSignup />
         </div>
     );
 }
