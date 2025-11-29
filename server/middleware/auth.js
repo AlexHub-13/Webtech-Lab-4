@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 
-module.exports = function authMiddleware(req, res, next) {
+function requireAuth(req, res, next) {
+    console.log(req.headers);
     const header = req.headers["authorization"];
 
     if (!header) {
@@ -22,4 +23,23 @@ module.exports = function authMiddleware(req, res, next) {
     } catch (err) {
         return res.status(401).json({ message: "Invalid token." });
     }
+}
+
+function requireRole(role) {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ message: "Not authenticated." });
+        }
+
+        if (role !== req.user.role) {
+            return res.status(403).json({ message: "Forbidden: insufficient role." });
+        }
+
+        next();
+    };
+}
+
+module.exports = {
+    requireAuth,
+    requireRole
 };

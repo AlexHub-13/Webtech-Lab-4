@@ -3,12 +3,13 @@ import React, { useState } from "react";
 import AddNewCourse from "../components/AddCourse.js";
 import AddCourseMember from "../components/AddCourseMember.js";
 import AddSignup from "../components/AddSignup.js";
+import AddUser from "../components/AddUser.js";
 import AddSlot from "../components/AddSlot.js";
 import AddSlotMember from "../components/AddSlotMember.js";
 import ModifyGrade from "../components/ModifyGrade.js";
 import ModifySlot from "../components/ModifySlot.js";
 
-export default function LoginPage() {
+export default function LoginPage({ onLogin, onForcePassChange }) {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [message, setMessage] = useState("");
@@ -29,60 +30,36 @@ export default function LoginPage() {
                 return;
             }
 
-            localStorage.setItem("token", data.token);
-            setMessage("Login successful!");
-            // TODO: redirect or load app state
+            console.log(data);
+
+            if (data.mustChangePass) {
+                onForcePassChange(data.token);
+                return;
+            }
+
+            onLogin(data.token, data.role);
         } catch (error) {
             setMessage("Network error: " + error.message);
         }
     };
 
     return (
-        <div className="w-full h-screen flex items-center justify-center bg-gray-100">
-            <form
-                onSubmit={handleSubmit}
-                className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-sm flex flex-col gap-4"
-            >
-                <h1 className="text-2xl font-bold text-center">Login</h1>
+        <div>
+            <form onSubmit={handleSubmit}>
+                <h1>Login</h1>
 
-                <input
-                    type="text"
-                    placeholder="Email or Username"
-                    className="border p-2 rounded-lg"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                />
+                <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
+                <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
 
-
-                <input
-                    type="password"
-                    placeholder="Password"
-                    className="border p-2 rounded-lg"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-
-
-                <button
-                    type="submit"
-                    className="bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-                >
+                <button type="submit">
                     Login
                 </button>
-
-
-                {message && (
-                    <p className="text-center text-red-600 text-sm">{message}</p>
-                )}
             </form>
 
-            <AddNewCourse />
+            <AddUser />
             <AddCourseMember />
+            <AddNewCourse />
             <AddSignup />
-            <AddSlot />
-            <AddSlotMember />
-            <ModifyGrade />
-            <ModifySlot />
         </div>
     );
 }

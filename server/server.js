@@ -5,7 +5,7 @@ const FileSync = require('lowdb/adapters/FileSync');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const auth = require('./middleware/auth.js');
+const { requireAuth, requireRole } = require('./middleware/auth');
 
 const app = express();
 const port = 3001;
@@ -16,9 +16,24 @@ app.use(express.urlencoded({ extended: true }));
 // Setup JSON mini database
 const adapter = new FileSync('data/db.json');
 const db = low(adapter);
- 
+
 // Sets the default values for the JSON
 db.defaults({ courses: [], users: [] }).write();
+
+if (db.get('users').value().length === 0) {
+    addAdmin();
+}
+
+async function addAdmin() {
+    const plainPass = "admin";
+    const id = "admin";
+    const fName = "Admin";
+    const lName = "Adminson";
+    const role = "admin";
+    const mustChangePass = true;
+    let hashedPass = await bcrypt.hash(plainPass, 10);
+    db.get('users').push({ id, hashedPass, fName, lName, role, mustChangePass }).write();
+}
 
 // Router objects:
 const courses = express.Router();
@@ -27,7 +42,8 @@ const secure = express.Router();
 const admin = express.Router();
 
 app.use("/api/open", open); // Open req. no auth
-app.use("/api/secure", auth, secure); // Secure req. auth
+app.use("/api/secure", requireAuth, secure); // Secure req. auth
+app.use("/api/admin", requireAuth, requireRole("admin"), admin); // Admin req. auth and role
 
 app.use('/', express.static('client')); // Serves front-end code on homepage.
 
@@ -45,7 +61,6 @@ app.use((req, res, next) => {
 // Open routes (no authentication):
 open.route('/auth/login')
     .post(async (req, res) => {
-        console.log("JWT_SECRET:", process.env.JWT_SECRET);
         await db.read();
 
         const { id, plainPass } = req.body;
@@ -61,14 +76,14 @@ open.route('/auth/login')
         }
 
         const token = jwt.sign({
-            userId: user.id,
-            role: user.role
-        },
-        process.env.JWT_SECRET,
-            { expiresIn: "3h" }
-        );
+            id: user.id,
+            role: user.role,
+            mustChangePass: user.mustChangePass
+        }, process.env.JWT_SECRET, { expiresIn: "3h" });
 
-        res.json({ token });
+        console.log(token);
+
+        res.json({ token, role: user.role, mustChangePass: user.mustChangePass });
     });
 
 open.route('/auth/register')
@@ -77,14 +92,24 @@ open.route('/auth/register')
     });
 
 // Secure account management routes (authentication required):
-secure.route('/auth/changePassword')
+secure.route('/changePassword')
     .post(async (req, res) => {
         await db.read();
-    });
 
-secure.route('/auth/logout')
-    .post(async (req, res) => {
-        await db.read();
+        const id = req.user.id; // from JWT
+        const { oldPass, newPass } = req.body;
+
+        const user = db.get("users").find({ id }).value();
+
+        if (!user) return res.status(404).json({ message: "User does not exist." });
+
+        const ok = await bcrypt.compare(oldPass, user.hashedPass);
+        if (!ok) return res.status(401).json({ message: "Incorrect current password." });
+
+        const hashedPass = await bcrypt.hash(newPass, 10);
+        db.get("users").find({ id }).assign({ hashedPass, mustChangePass: false }).write();
+
+        res.json({ message: "Password updated." });
     });
 
 // Admin-specific routes:
@@ -95,7 +120,7 @@ admin.route('/users')
     })
     .post(async (req, res) => {
         await db.read();
-        let { id, plainPass, role } = req.body;
+        let { id, plainPass, fName, lName, role } = req.body;
 
         // Sanitization:
         id = validator.escape(String(id));
@@ -114,7 +139,7 @@ admin.route('/users')
             return res.status(400).send('Invalid role; must be admin, ta, or student.');
         }
 
-        db.get('users').push({ id, hashedPass, role, mustChangePass }).write();
+        db.get('users').push({ id, hashedPass, fName, lName, role, mustChangePass }).write();
         res.status(201).send('User created successfully.');
     });
 
@@ -145,7 +170,7 @@ courses.route('/')
 
         if (!validator.isInt(String(section), { min: 1, max: 99 })) {
             return res.status(400).send('Invalid section number, must be 1–99.');
-        } 
+        }
 
         // Check for duplicates:
         const exists = db.get('courses').find({ term, section }).value();
@@ -223,7 +248,7 @@ courses.route('/:term/:section/members')
             if (exists) {
                 ignoredIDs.push(member.id);
             } else {
-                existingMembers.push( { id, fName, lName, role }).write(); // Creating new member.
+                existingMembers.push({ id, fName, lName, role }).write(); // Creating new member.
                 added++;
             }
         }
@@ -536,7 +561,7 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members')
         const member = { id: memberID, grade: "", comment: "" };
         slot.get('members').push(member).write();
         res.status(201).send('Member added successfully.');
-        
+
     })
     .get(async (req, res) => {
         await db.read();
@@ -643,7 +668,7 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members/:memberID'
         }
 
         if ('comment' in req.body && req.body.comment && validator.isLength(req.body.comment, { min: 0, max: 500 })) {
-            const comment = member.get('comment').value() + String(req.body.comment) + " " ;
+            const comment = member.get('comment').value() + String(req.body.comment) + " ";
             member.set('comment', comment).write();
         }
 
