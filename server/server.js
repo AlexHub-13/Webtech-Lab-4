@@ -200,8 +200,58 @@ courses.route('/:term/:section')
             return res.status(400).send('Course does not exist.');
         }
 
+        if (db.get('courses').find({ term, section }).get('signups').value().length > 0) {
+            return res.status(400).send('Course has sign-up sheets; cannot delete.');
+        }
+
         db.get('courses').remove({ term, section }).write(); // Deletes the course.
         res.status(200).send('Course deleted successfully.');
+    })
+    .put(async (req, res) => {
+        await db.read();
+
+        const term = Number(req.params.term);
+        const section = Number(req.params.section);
+
+        let newTerm = false;
+        let newSection = false;
+
+        const ogExists = db.get('courses').find({ term, section }).value();
+        if (!ogExists) {
+            return res.status(400).send('Course does not exist.');
+        }
+
+        const hasSignups = db.get('courses').find({ term, section }).get('signups').value().length > 0;
+
+        // Validation / Sanitization:
+        if ('term' in req.body && req.body.term && validator.isInt(String(req.body.term), { min: 1, max: 9999 }) && !hasSignups) {
+            newTerm = Number(req.body.term);
+        }
+
+        if ('name' in req.body && req.body.name && validator.isLength(req.body.name, { min: 0, max: 100 })) {
+            const newName = validator.escape(String(req.body.name));
+            db.get('courses').find({ term, section }).set('name', newName).write();
+        }
+
+        if ('section' in req.body && req.body.section && validator.isInt(String(req.body.section), { min: 1, max: 99 }) && !hasSignups) {
+            newSection = Number(req.body.section);
+        }
+
+        newTerm = newTerm || term;
+        newSection = newSection || section;
+
+        // Check for duplicates:
+        const exists = db.get('courses').find({ newTerm, newSection }).value();
+        if (exists && (newTerm !== term || newSection !== section)) {
+            return res.status(400).send('Course already exists for this term and section.');
+        } else {
+            db.get('courses').find({ term, section }).assign({ term: newTerm, section: newSection }).write();
+        }
+
+        
+
+        // Creates the new course:
+        res.status(200).send('Course modified successfully.');
     })
 
 // Members:

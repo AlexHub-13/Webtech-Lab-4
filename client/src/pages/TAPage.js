@@ -19,7 +19,7 @@ export default function TAPage({ onLogout }) {
                 <button onClick={onLogout}>Logout</button>
                 <h1>TA Dashboard</h1>
 
-                <button onClick={() => setGradingMode(gradingMode === true)}>
+                <button onClick={() => setGradingMode(true)}>
                     Enter Grading Mode
                 </button>
 
