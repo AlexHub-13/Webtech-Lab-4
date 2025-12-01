@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function AddCourse() {
+export default function ModifySlot() {
     const [term, setTerm] = useState("");
     const [section, setSection] = useState(1);
     const [sheetID, setSheetID] = useState("");
@@ -42,7 +42,7 @@ export default function AddCourse() {
                 <br />
                 <label>
                     Section:{" "}
-                    <input type="number" min={1} max={99} defaultValue={1} onChange={(e) => setTerm(e.target.value)} />
+                    <input type="number" min={1} max={99} defaultValue={1} onChange={(e) => setSection(e.target.value)} />
                 </label>
                 <br />
                 <label>
@@ -55,7 +55,7 @@ export default function AddCourse() {
                 </label>
                 <br />
                 <label>
-                    Start: <input type="date" required="" onChange={(e) => setStart(e.target.value)} />
+                    Start: <input type="datetime-local" required="" onChange={(e) => setStart(e.target.value)} />
                 </label>
                 <br />
                 <label>

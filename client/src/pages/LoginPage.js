@@ -46,8 +46,10 @@ export default function LoginPage({ onLogin, onForcePassChange }) {
     return (
         <div>
             <form onSubmit={handleSubmit}>
-                <h1>Login</h1>
-
+                <h1>Alex's Course Management Application</h1>
+                <p>This site allows full management of school courses for students and TAs.</p>
+                <br />
+                <h2>Login</h2>
                 <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
                 <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
 

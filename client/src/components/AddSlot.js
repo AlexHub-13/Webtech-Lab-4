@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function AddCourse() {
+export default function AddSlot() {
     const [term, setTerm] = useState("");
     const [section, setSection] = useState(1);
     const [id, setID] = useState("");
@@ -55,7 +55,7 @@ export default function AddCourse() {
                 </label>
                 <br />
                 <label>
-                    Start: <input type="date" required="" onChange={(e) => setStart(e.target.value)} />
+                    Start: <input type="datetime-local" required="" onChange={(e) => setStart(e.target.value)} />
                 </label>
                 <br />
                 <label>

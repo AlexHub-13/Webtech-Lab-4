@@ -143,6 +143,24 @@ admin.route('/users')
         res.status(201).send('User created successfully.');
     });
 
+admin.route('/users/:id')
+    .put(async (req, res) => {
+        await db.read();
+
+        const id = req.params.id;
+        const { newPass } = req.body;
+
+        const user = db.get('users').find({ id }).value();
+
+        if (!user) {
+            return res.status(400).send('User does not exist.');
+        }
+        
+        const hashedPass = await bcrypt.hash(newPass, 10);
+        db.get('users').find({ id }).assign({ hashedPass, mustChangePass: true }).write();
+        res.status(200).send('User password reset successfully.');
+    });
+
 // Courses:
 courses.route('/')
     .get(async (req, res) => {
@@ -248,7 +266,7 @@ courses.route('/:term/:section')
             db.get('courses').find({ term, section }).assign({ term: newTerm, section: newSection }).write();
         }
 
-        
+
 
         // Creates the new course:
         res.status(200).send('Course modified successfully.');
@@ -335,6 +353,19 @@ courses.route('/:term/:section/members')
         let reqIDs = req.body.ids || []; // Just a list of members.
         let existingMembers = db.get('courses').find({ term, section }).get('members');
 
+        let isInSignups = [];
+
+        // Ensures that no members being deleted are signed up in any slots:
+        db.get('courses').find({ term, section }).get('signups').value().forEach(signup => {
+            signup["slots"].forEach(slot => {
+                isInSignups = slot["members"].filter(member => reqIDs.includes(member.id));
+            });
+        });
+
+        if (isInSignups.length > 0) {
+            return res.status(400).send(`Cannot delete members who are signed up in slots.`);
+        }
+
         for (let i = 0; i < reqIDs.length; i++) {
 
             // Sanitization: 
@@ -408,6 +439,10 @@ courses.route('/:term/:section/signups')
             return res.status(400).send('Sheet does not exist.');
         }
 
+        if (sheetExists.slots.length > 0) {
+            return res.status(400).send('Sheet has slots; cannot delete.');
+        }
+
         signups.remove({ id }).write();
         res.status(200).send(`Sheet deleted successfully.`);
     })
@@ -446,8 +481,8 @@ courses.route('/:term/:section/signups/:id/slots')
             return res.status(400).send('Course does not exist.');
         }
 
-        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
-        if (!sheetExists) {
+        const sheet = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
+        if (!sheet) {
             return res.status(400).send('Sheet does not exist.');
         }
 
@@ -459,6 +494,17 @@ courses.route('/:term/:section/signups/:id/slots')
         if (!validator.isInt(duration, { min: 1, max: 240 }) || !validator.isInt(numSlots, { min: 1, max: 99 }) || !validator.isInt(maxMembers, { min: 1, max: 99 })) {
             return res.status(400).send('Invalid input.');
         }
+
+        let overlap = false;
+        sheet.slots.forEach(slot => {
+            if ((start < slot.start + slot.duration * 60000) && (slot.start < start + duration * 60000)) {
+                overlap = true;
+            }
+        });
+
+        if (overlap) {
+            return res.status(400).send('Slot time overlaps with existing slot.');
+        } 
 
         duration = Number(duration);
         numSlots = Number(numSlots);
@@ -505,8 +551,8 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/')
             return res.status(400).send('Course does not exist.');
         }
 
-        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
-        if (!sheetExists) {
+        const sheet = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
+        if (!sheet) {
             return res.status(400).send('Sheet does not exist.');
         }
 
@@ -519,25 +565,47 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/')
             return res.status(400).send('Request body empty; cannot modify.');
         }
 
+        let start = slot.get('start').value();
+        let duration = slot.get('duration').value();
+
         if ('start' in req.body && req.body.start && validator.isDate(req.body.start)) {
-            const start = req.body.start;
-            slot.set('start', start).write();
+            start = req.body.start;
         }
 
         if ('duration' in req.body && req.body.duration && validator.isInt(req.body.duration, { min: 1, max: 240 })) {
-            const duration = Number(req.body.duration);
-            slot.set('duration', duration).write();
+            duration = Number(req.body.duration);
         }
+
+        let overlap = false;
+        sheet.slots.forEach(slot => {
+            if ((start < slot.start + slot.duration * 60000) && (slot.start < start + duration * 60000) && slot.id !== slotID) {
+                overlap = true;
+            }
+        });
+
+        if (overlap) {
+            return res.status(400).send('Slot time overlaps with existing slot.');
+        }
+
+        slot.set('start', start).write();
+        slot.set('duration', duration).write();
 
         if ('numSlots' in req.body && req.body.numSlots && !validator.isInt(req.body.numSlots, { min: 1, max: 99 })) {
             const numSlots = Number(req.body.numSlots);
             slot.set('numSlots', numSlots).write();
         }
 
+        let maxMembers;
+
         if ('maxMembers' in req.body && req.body.maxMembers && validator.isInt(req.body.maxMembers, { min: 1, max: 99 })) {
-            const maxMembers = Number(req.body.maxMembers);
-            slot.set('maxMembers', maxMembers).write();
+            maxMembers = Number(req.body.maxMembers);
         }
+
+        if (maxMembers < slot.get('members').value().length) {
+            return res.status(400).send('Cannot set max members less than current number of members.');
+        }
+
+        slot.set('maxMembers', maxMembers).write();
 
         res.status(200).send(`Slot modified successfully. Members of this slot are the following: ${slot.get('members').value()}`);
     })
@@ -559,9 +627,13 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/')
             return res.status(400).send('Sheet does not exist.');
         }
 
-        const slotExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).value();
-        if (!slotExists) {
+        const slot = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).value();
+        if (!slot) {
             return res.status(400).send('Slot does not exist.');
+        }
+
+        if (slot.members.length > 0) {
+            return res.status(400).send('Slot has members; cannot delete.');
         }
 
         db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').remove({ id: slotID }).write();

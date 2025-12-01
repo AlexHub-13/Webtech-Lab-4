@@ -2,12 +2,14 @@ import AddCourse from "../components/AddCourse";
 import AddCourseMember from "../components/AddCourseMember";
 import AddSignup from "../components/AddSignup";
 import AddSlot from "../components/AddSlot";
+import AddSlotMember from "../components/AddSlotMember";
 import ModifyCourse from "../components/ModifyCourse";
 import ModifySlot from "../components/ModifySlot";
 import DeleteCourse from "../components/DeleteCourse";
 import DeleteCourseMember from "../components/DeleteCourseMember";
 import DeleteSignup from "../components/DeleteSignup";
 import DeleteSlot from "../components/DeleteSlot";
+import DeleteSlotMember from "../components/DeleteSlotMember";
 import { useState } from "react";
 
 export default function TAPage({ onLogout }) {
@@ -36,6 +38,9 @@ export default function TAPage({ onLogout }) {
                 <AddSlot />
                 <ModifySlot />
                 <DeleteSlot />
+
+                <AddSlotMember />
+                <DeleteSlotMember />
             </div>
         );
     } else {
