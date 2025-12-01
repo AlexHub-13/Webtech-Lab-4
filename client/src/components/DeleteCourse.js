@@ -4,13 +4,21 @@ export default function DeleteCourse() {
     const [term, setTerm] = useState("");
     const [section, setSection] = useState(1);
 
+    const token = localStorage.getItem('token');
+
     const submit = async (e) => {
         e.preventDefault();
 
         if (!window.confirm(`Delete course ${term} (section ${section})?`)) return;
 
         try {
-            const res = await fetch(`api/courses/${term}/${section}`, { method: 'DELETE' });
+            const res = await fetch(`api/secure/courses/${term}/${section}`, { 
+                method: 'DELETE',
+                headers: { 
+                    "Content-Type": "application/json" ,
+                    "Authorization": "Bearer " + token
+                }
+            });
 
             if (res.ok) {
                 alert('Course deleted.');

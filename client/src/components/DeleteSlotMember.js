@@ -7,15 +7,20 @@ export default function DeleteSlotMember() {
     const [slotID, setSlotID] = useState("");
     const [memberID, setMemberID] = useState("");
 
+    const token = localStorage.getItem('token');
+
     const submit = async (e) => {
         e.preventDefault();
 
         const body = { id: memberID };
 
         try {
-            const res = await fetch(`api/courses/${term}/${section}/signups/${sheetID}/slots/${slotID}/members`, {
+            const res = await fetch(`api/secure/courses/${term}/${section}/signups/${sheetID}/slots/${slotID}/members`, {
                 method: 'POST',
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json" ,
+                    "Authorization": "Bearer " + token
+                },
                 body: JSON.stringify(body)
             });
 

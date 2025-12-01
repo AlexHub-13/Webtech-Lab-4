@@ -26,7 +26,7 @@ export default function LoginPage({ onLogin, onForcePassChange }) {
 
             const data = await res.json();
             if (!res.ok) {
-                setMessage(data.message || "Login failed");
+                alert(data.message || "Login failed");
                 return;
             }
 

@@ -10,6 +10,7 @@ import DeleteCourseMember from "../components/DeleteCourseMember";
 import DeleteSignup from "../components/DeleteSignup";
 import DeleteSlot from "../components/DeleteSlot";
 import DeleteSlotMember from "../components/DeleteSlotMember";
+import GradingMode from "../components/GradingMode";
 import { useState } from "react";
 
 export default function TAPage({ onLogout }) {
@@ -52,6 +53,8 @@ export default function TAPage({ onLogout }) {
                 <button onClick={() => setGradingMode(gradingMode === false)}>
                     Exit Grading Mode
                 </button>
+
+                <GradingMode />
             </div>
         );
     }

@@ -5,6 +5,8 @@ export default function DeleteCourseMember() {
     const [section, setSection] = useState(1);
     const [id, setMemberID] = useState("");
 
+    const token = localStorage.getItem('token');
+
     const submit = async (e) => {
         e.preventDefault();
 
@@ -12,9 +14,12 @@ export default function DeleteCourseMember() {
 
         try {
             const body = { ids: [id] };
-            const res = await fetch(`api/courses/${term}/${section}/members`, {
+            const res = await fetch(`api/secure/courses/${term}/${section}/members`, {
                 method: 'DELETE',
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json" ,
+                    "Authorization": "Bearer " + token
+                },
                 body: JSON.stringify(body)
             });
 

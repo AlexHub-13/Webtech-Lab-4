@@ -1,20 +1,19 @@
-import React, { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-export default function GetAvailableSlots() {
-    const [slots, setSlots] = useState([]);
-
+export default function GradingMode() {
     const token = localStorage.getItem("token");
+    const [slots, setSlots] = useState([]);
 
     useEffect(() => {
         async function fetchSlots() {
             try {
-                const res = await fetch("/api/secure/available-slots", {
+                const res = await fetch("/api/secure/active-slots", {
                     method: "GET",
                     headers: { Authorization: "Bearer " + token }
                 });
 
                 if (!res.ok) {
-                    alert("Failed to fetch available slots");
+                    alert("Failed to fetch active slots");
                     return;
                 }
 
@@ -28,35 +27,13 @@ export default function GetAvailableSlots() {
         fetchSlots();
     });
 
-    if (slots.length === 0) {
-        return <p>There are no available slots.</p>;
-    }
-
     return (
         <div>
-            <h2>Available Slots</h2>
+            <h2>Grading Mode</h2>
 
             {slots.map((item, index) => {
                 const { course, signup, slot, memberID } = item;
-                const joinSlot = async () => {
-                    try {
-                        const res = await fetch(`api/secure/courses/${course.term}/${course.section}/signups/${signup.id}/slots/${slot.id}/members`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json",
-                                        Authorization: "Bearer " + token },
-                            body: JSON.stringify({ id: memberID })
-                        }); 
-                        if (res.ok) {
-                            alert("Successfully joined slot.");
-                        }
-                        else {
-                            alert("Failed to join slot: " + (res.status || 'Unknown error'));
-                        }
-                    } catch (err) {
-                        alert("Network error: " + err.message);
-                    }
-                };
-                
+
                 return (
                     <div
                         key={index}
@@ -75,7 +52,6 @@ export default function GetAvailableSlots() {
                         <p><strong>Slot ID:</strong> {slot.id}</p>
                         <p><strong>Start:</strong> {slot.start}</p>
                         <p><strong>Duration:</strong> {slot.duration} min</p>
-                        <button onClick={joinSlot}>Join Slot</button>
 
                         <hr />
                     </div>

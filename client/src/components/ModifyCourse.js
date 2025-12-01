@@ -8,15 +8,20 @@ export default function ModifyCourse() {
     const [newName, setNewName] = useState("");
     const [newSection, setNewSection] = useState(1);
 
+    const token = localStorage.getItem('token');
+
     const submit = async (e) => {
         e.preventDefault();
 
         const body = { term: String(newTerm), name: newName, section: String(newSection) };
     
         try {
-            const res = await fetch(`/api/courses/${term}/${section}`, {
+            const res = await fetch(`/api/secure/courses/${term}/${section}`, {
                 method: 'PUT',
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json" ,
+                    "Authorization": "Bearer " + token
+                },
                 body: JSON.stringify(body)
             });
 

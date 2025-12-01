@@ -8,15 +8,20 @@ export default function AddSignup() {
     const [start, setStart] = useState("");
     const [end, setEnd] = useState("");
 
+    const token = localStorage.getItem('token');
+
     const submit = async (e) => {
         e.preventDefault();
 
         const body = { id, name, notBefore: start, notAfter: end };
 
         try {
-            const res = await fetch(`api/courses/${term}/${section}/signups`, {
+            const res = await fetch(`api/secure/courses/${term}/${section}/signups`, {
                 method: 'POST',
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json" ,
+                    "Authorization": "Bearer " + token
+                },
                 body: JSON.stringify(body)
             });
 

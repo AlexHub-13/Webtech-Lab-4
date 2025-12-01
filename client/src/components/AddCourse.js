@@ -4,6 +4,7 @@ export default function AddCourse() {
     const [term, setTerm] = useState("");
     const [name, setName] = useState("");
     const [section, setSection] = useState(1);
+    const token = localStorage.getItem('token');
 
     const submit = async (e) => {
         e.preventDefault();
@@ -11,9 +12,12 @@ export default function AddCourse() {
         const body = { term: String(term), name, section: String(section) };
     
         try {
-            const res = await fetch('/api/courses', {
+            const res = await fetch('/api/secure/courses', {
                 method: 'POST',
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json" ,
+                    "Authorization": "Bearer " + token
+                },
                 body: JSON.stringify(body)
             });
 

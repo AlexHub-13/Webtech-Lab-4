@@ -11,15 +11,20 @@ export default function AddCourse() {
     const [grade, setGrade] = useState("");
     const [comment, setComment] = useState("");
 
+    const token = localStorage.getItem('token');
+
     const submit = async (e) => {
         e.preventDefault();
 
         const body = { grade, comment };
 
         try {
-            const res = await fetch(`${base}/${term}/${section}/signups/${sheetID}/slots/${slotID}/members/${memberID}`, {
+            const res = await fetch(`api/secure/courses/${term}/${section}/signups/${sheetID}/slots/${slotID}/members/${memberID}`, {
                 method: 'PUT',
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json" ,
+                    "Authorization": "Bearer " + token
+                },
                 body: JSON.stringify(body)
             });
 

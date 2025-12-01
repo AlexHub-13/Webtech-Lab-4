@@ -6,14 +6,20 @@ export default function AddCourse() {
     const [sheetID, setSheetID] = useState("");
     const [slotID, setSlotID] = useState("");
 
+    const token = localStorage.getItem('token');
+
     const submit = async (e) => {
         e.preventDefault();
 
         if (!window.confirm(`Delete slot ID ${slotID} from course ${term} (section ${section}) and signup sheet ID ${sheetID}?`)) return;
 
         try {
-            const res = await fetch(`api/courses/${term}/${section}/signups/${sheetID}/slots/${slotID}`, {
-                method: 'DELETE'
+            const res = await fetch(`api/secure/courses/${term}/${section}/signups/${sheetID}/slots/${slotID}`, {
+                method: 'DELETE',
+                headers: { 
+                    "Content-Type": "application/json" ,
+                    "Authorization": "Bearer " + token
+                }
             });
 
             if (res.ok) {

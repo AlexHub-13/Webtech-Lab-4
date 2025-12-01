@@ -222,9 +222,38 @@ secure.route('/available-slots')
         return res.json(results);
     });
 
+secure.route('/active-slots')
+    .get(async (req, res) => {
+        await db.read();
+        const results = [];
+        const userID = req.user.id;
+        const now = Date.now();
+        const courses = db.get("courses").value() || [];
+        for (const course of courses) {
+            for (const signup of course.signups) {
+                for (const slot of signup.slots) {
+                    const memberEntry = (slot.members).find(member => member.id === userID);
+                    if (memberEntry && slot.start <= now && (slot.start + slot.duration * 60000) >= now) {
+                        results.push({
+                            course: { term: course.term, name: course.name, section: course.section },
+                            signup: { id: signup.id, name: signup.name },
+                            slot: {
+                                id: slot.id,
+                                start: slot.start,
+                                duration: slot.duration,
+                            },
+                            memberID: memberEntry.id
+                        });
+                    }
+                }
+            }
+        }
+        return res.json(results);
+    });
+
 
 // Courses:
-courses.route('/')
+secure.route('/courses')
     .get(async (req, res) => {
         await db.read();
         res.json(db.get('courses').value());
@@ -266,7 +295,7 @@ courses.route('/')
         res.status(201).send('Course created successfully.');
     })
 
-courses.route('/:term/:section')
+secure.route('/courses/:term/:section')
     .delete(async (req, res) => {
         await db.read();
 
@@ -335,7 +364,7 @@ courses.route('/:term/:section')
     })
 
 // Members:
-courses.route('/:term/:section/members')
+secure.route('/courses/:term/:section/members')
     .post(async (req, res) => {
         await db.read();
 
@@ -445,7 +474,7 @@ courses.route('/:term/:section/members')
         res.status(200).send(`Members deleted successfully.`);
     })
 
-courses.route('/:term/:section/signups')
+secure.route('/courses/:term/:section/signups')
     .post(async (req, res) => {
         await db.read();
 
@@ -524,7 +553,7 @@ courses.route('/:term/:section/signups')
         res.json(signups.value());
     })
 
-courses.route('/:term/:section/signups/:id/slots')
+secure.route('/courses/:term/:section/signups/:id/slots')
     .post(async (req, res) => {
         await db.read();
 
@@ -597,7 +626,7 @@ courses.route('/:term/:section/signups/:id/slots')
         res.status(200).send(db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').value());
     })
 
-courses.route('/:term/:section/signups/:sheetID/slots/:slotID/')
+secure.route('/courses/:term/:section/signups/:sheetID/slots/:slotID/')
     .put(async (req, res) => {
         await db.read();
 

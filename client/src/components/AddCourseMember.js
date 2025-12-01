@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function AddCourse() {
+export default function AddCourseMember() {
     const [term, setTerm] = useState("");
     const [section, setSection] = useState(1);
     const [id, setMemberID] = useState("");
@@ -8,15 +8,20 @@ export default function AddCourse() {
     const [lName, setLName] = useState("");
     const [role, setRole] = useState("");
 
+    const token = localStorage.getItem('token');
+
     const submit = async (e) => {
         e.preventDefault();
 
         const body = { "members": [{ id, fName, lName, role }] };
 
         try {
-            const res = await fetch(`/api/courses/${term}/${section}/members`, {
+            const res = await fetch(`/api/secure/courses/${term}/${section}/members`, {
                 method: 'POST',
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json" ,
+                    "Authorization": "Bearer " + token
+                },
                 body: JSON.stringify(body)
             });
 

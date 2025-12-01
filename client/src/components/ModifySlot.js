@@ -10,15 +10,20 @@ export default function ModifySlot() {
     const [num, setNum] = useState(1);
     const [max, setMax] = useState(1);
 
+    const token = localStorage.getItem('token');
+
     const submit = async (e) => {
         e.preventDefault();
 
         const body = { start, duration, numSlots: num, maxMembers: max };
 
         try {
-            const res = await fetch(`api/courses/${term}/${section}/signups/${sheetID}/slots/${slotID}`, {
+            const res = await fetch(`api/secure/courses/${term}/${section}/signups/${sheetID}/slots/${slotID}`, {
                 method: 'PUT',
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json" ,
+                    "Authorization": "Bearer " + token
+                },
                 body: JSON.stringify(body)
             });
 

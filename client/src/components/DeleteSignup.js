@@ -5,6 +5,8 @@ export default function DeleteSignup() {
     const [section, setSection] = useState(1);
     const [id, setID] = useState("");
 
+    const token = localStorage.getItem('token');
+
     const submit = async (e) => {
         e.preventDefault();
 
@@ -12,9 +14,12 @@ export default function DeleteSignup() {
 
         try {
             const body = { id };
-            const res = await fetch(`api/courses/${term}/${section}/signups`, {
+            const res = await fetch(`api/secure/courses/${term}/${section}/signups`, {
                 method: 'DELETE',
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json" ,
+                    "Authorization": "Bearer " + token
+                },
                 body: JSON.stringify(body)
             });
 
