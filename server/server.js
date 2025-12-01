@@ -155,11 +155,73 @@ admin.route('/users/:id')
         if (!user) {
             return res.status(400).send('User does not exist.');
         }
-        
+
         const hashedPass = await bcrypt.hash(newPass, 10);
         db.get('users').find({ id }).assign({ hashedPass, mustChangePass: true }).write();
         res.status(200).send('User password reset successfully.');
     });
+
+secure.route('/signed-slots')
+    .get(async (req, res) => {
+        await db.read();
+        const userId = req.user.id;
+
+        const results = [];
+
+        const courses = db.get("courses").value() || [];
+        for (const course of courses) {
+            for (const signup of course.signups) {
+                for (const slot of signup.slots) {
+                    const memberEntry = (slot.members).find(member => member.id === userId);
+
+                    if (memberEntry) {
+                        results.push({
+                            course: { term: course.term, name: course.name, section: course.section },
+                            signup: { id: signup.id, name: signup.name },
+                            slot: {
+                                id: slot.id,
+                                start: slot.start,
+                                duration: slot.duration,
+                            },
+                            memberID: memberEntry.id
+                        });
+                    }
+                }
+            }
+        }
+
+        return res.json(results);
+    });
+
+secure.route('/available-slots')
+    .get(async (req, res) => {
+        await db.read();
+        const results = [];
+        const userID = req.user.id;
+
+        const courses = db.get("courses").value() || [];
+        for (const course of courses) {
+            for (const signup of course.signups) {
+                for (const slot of signup.slots) {
+                    if (slot.members.length <= slot.maxMembers && slot.start > Date.now() && slot.members.find(member => member.id === userID) === undefined) {
+                        results.push({
+                            course: { term: course.term, name: course.name, section: course.section },
+                            signup: { id: signup.id, name: signup.name },
+                            slot: {
+                                id: slot.id,
+                                start: slot.start,
+                                duration: slot.duration,
+                            },
+                            memberID: userID
+                        });
+                    }
+                }
+            }
+        }
+
+        return res.json(results);
+    });
+
 
 // Courses:
 courses.route('/')
@@ -504,7 +566,7 @@ courses.route('/:term/:section/signups/:id/slots')
 
         if (overlap) {
             return res.status(400).send('Slot time overlaps with existing slot.');
-        } 
+        }
 
         duration = Number(duration);
         numSlots = Number(numSlots);
@@ -640,7 +702,7 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/')
         res.status(200).send(`Slot deleted successfully.`);
     })
 
-courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members')
+secure.route('/courses/:term/:section/signups/:sheetID/slots/:slotID/members')
     .post(async (req, res) => {
         await db.read();
 
@@ -656,8 +718,8 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members')
             return res.status(400).send('Course does not exist.');
         }
 
-        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
-        if (!sheetExists) {
+        const sheet = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
+        if (!sheet) {
             return res.status(400).send('Sheet does not exist.');
         }
 
@@ -673,11 +735,28 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members')
         }
 
         if (!validator.isLength(memberID, { min: 0, max: 8 })) {
+            console.log(memberID);
             return res.status(400).send('Invalid member ID.');
         }
 
         if (slot.get('members').find({ id: memberID }).value()) {
             return res.status(400).send('Member already in slot.');
+        }
+
+        const timeUntilSlot = slot.get('start').value() - Date.now();
+        if (timeUntilSlot < 60 * 60000) {
+            return res.status(400).send('Cannot add member less than an hour before slot start time.');
+        }
+
+        let isInAnotherSlot = false;
+        sheet.slots.forEach(slot => {
+            if (slot.members.find(member => member.id === memberID && slot.id !== slotID)) {
+                isInAnotherSlot = true;
+            }
+        });
+
+        if (isInAnotherSlot) {
+            return res.status(400).send('Member already in another slot for this sheet.');
         }
 
         const member = { id: memberID, grade: "", comment: "" };
@@ -713,7 +792,7 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members')
         res.json(members.value());
     })
 
-courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members/:memberID')
+secure.route('/courses/:term/:section/signups/:sheetID/slots/:slotID/members/:memberID')
     .delete(async (req, res) => {
         await db.read();
 
@@ -728,8 +807,8 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members/:memberID'
             return res.status(400).send('Course does not exist.');
         }
 
-        const sheetExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
-        if (!sheetExists) {
+        const sheet = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).value();
+        if (!sheet) {
             return res.status(400).send('Sheet does not exist.');
         }
 
@@ -741,6 +820,11 @@ courses.route('/:term/:section/signups/:sheetID/slots/:slotID/members/:memberID'
         const memberExists = db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).get('members').find({ id: memberID }).value();
         if (!memberExists) {
             return res.status(400).send('Member does not exist.');
+        }
+
+        const timeUntilSlot = slotExists.start - Date.now();
+        if (timeUntilSlot < 120 * 60000) {
+            return res.status(400).send('Cannot delete member less than two hours before slot start time.');
         }
 
         db.get('courses').find({ term, section }).get('signups').find({ id: sheetID }).get('slots').find({ id: slotID }).get('members').remove({ id: memberID }).write();

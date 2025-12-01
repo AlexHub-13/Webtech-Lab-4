@@ -1,4 +1,7 @@
 import AddSlotMember from "../components/AddSlotMember";
+import GetAvailableSlots from "../components/GetAvailableSlots";
+import GetSignedSlots from "../components/GetSignedSlots";
+
 
 export default function StudentPage({ onLogout }) {
     return (
@@ -6,7 +9,8 @@ export default function StudentPage({ onLogout }) {
             <button onClick={onLogout}>Logout</button>
             <h1>Student Dashboard</h1>
 
-            <AddSlotMember />
+            <GetSignedSlots />
+            <GetAvailableSlots />
         </div>
     );
 }
