@@ -10,8 +10,8 @@ export default function ChangeOtherPassword() {
         const token = localStorage.getItem("token");
 
         try {
-            const res = await fetch(`/api/admin/user/${userID}`, {
-                method: "POST",
+            const res = await fetch(`/api/admin/users/${userID}`, {
+                method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer " + token
@@ -19,20 +19,15 @@ export default function ChangeOtherPassword() {
                 body: JSON.stringify({ newPass })
             });
 
-            const data = await res.json();
-
             if (!res.ok) {
-                setMessage(data.message || "Error updating password");
+                alert('Error: ' + (res.status || 'Failed to delete slot.'));
             } else {
-                setMessage("Password updated successfully!");
-                setOldPass("");
+                alert("Password updated successfully.");
+                setUserID("");
                 setNewPass("");
-                setConfirm("");
-
-                onLogout();
             }
-        } catch {
-            setMessage("Network error");
+        } catch(err) {
+            console.error('Error deleting slot:', err);
         }
     };
 

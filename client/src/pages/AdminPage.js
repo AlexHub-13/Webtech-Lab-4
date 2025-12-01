@@ -13,6 +13,7 @@ import DeleteSignup from "../components/DeleteSignup";
 import DeleteSlot from "../components/DeleteSlot";
 import DeleteSlotMember from "../components/DeleteSlotMember";
 import { useState } from "react";
+import ChangeOtherPassword from "../components/ChangeOtherPassword";
 
 export default function AdminPage({ onLogout }) {
     const [gradingMode, setGradingMode] = useState(false);
@@ -29,6 +30,7 @@ export default function AdminPage({ onLogout }) {
 
                 <ChangePassword onLogout={onLogout} />
                 <AddUser />
+                <ChangeOtherPassword />
 
                 <AddCourse />
                 <ModifyCourse />
