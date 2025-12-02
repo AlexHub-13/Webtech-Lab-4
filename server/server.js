@@ -45,7 +45,7 @@ app.use("/api/open", open); // Open req. no auth
 app.use("/api/secure", requireAuth, secure); // Secure req. auth
 app.use("/api/admin", requireAuth, requireRole("admin"), admin); // Admin req. auth and role
 
-app.use('/', express.static('client/build')); // Serves front-end code on homepage.
+app.use('/', express.static('../client/build')); // Serves front-end code on homepage.
 
 // For all routes, log requests.
 app.use((req, res, next) => {
